@@ -7,15 +7,16 @@ import AddButton from "./AddButton";
 const ArrayData = () => {
     const [editedval, setEditedval] = useState();
 
-
-    const [subHeading, setSubHeading] = useState("");
+    const [isDeleteChecked , setIsDeleteChecked] = useState(true);
+    const [subHeading, setSubHeading] = useState();
     const [isShowAddBtn, setIsShowAddBtn] = useState(false);
     const [isUpdateShow, setIsUpdateShow] = useState(false);
     const [headingModal, setHeadingModal] = useState("Add Note")
     const [obj, setobj] = useState({
         note: "",
         id: "",
-        completed: false
+        completed: false,
+        isWantToDelete : false
     });
 
     const ref = React.useRef(null);
@@ -24,9 +25,6 @@ const ArrayData = () => {
 
 
     const filteredArray = search ? arr.filter(el => el.note.includes(search)) : arr;
-
-
-    console.log(typeof (search));
 
     useEffect(() => {
         setArr(() => {
@@ -41,7 +39,8 @@ const ArrayData = () => {
             ...prev,
             note: e.target.value.toLowerCase(),
             id: arr.length + 1,
-            completed: false
+            completed: false,
+            isWantToDelete:false
         }))
     }
 
@@ -55,20 +54,13 @@ const ArrayData = () => {
     }
     const addNote = () => {
         setIsShowAddBtn(false);
-
         obj.note.length === 0 ?
             alert("Please Enter Some Content You Cannot Sumbit Empty Note ") : setArr((prev) => {
                 const dataArray = [...prev];
                 dataArray.push(obj);
                 localStorage.setItem("notes", JSON.stringify(dataArray));
-                const getdata = localStorage.getItem("notes");
-                const parsedData = JSON.parse(getdata);
-                return parsedData;
+                return dataArray;
             });
-
-
-
-
         setobj((prev) => ({
             ...prev,
             note: "",
@@ -88,11 +80,6 @@ const ArrayData = () => {
             return updatedVal
         });
     }
-
-
-
-
-
     const deleteNote = (Id) => {
         setArr(() => {
             const getData = localStorage.getItem("notes");
@@ -100,9 +87,7 @@ const ArrayData = () => {
             // getData.splice(e-1,1);
             const filteredData = getParseddata.filter((e) => { return e.id !== Id });
             localStorage.setItem("notes", JSON.stringify(filteredData));
-            const freshData = localStorage.getItem("notes");
-            const freshParsedData = JSON.parse(freshData);
-            return freshParsedData;
+            return filteredData;
         });
 
         setSubHeading(` Note no.${Id} Deleted SuccessFully`);
@@ -120,9 +105,7 @@ const ArrayData = () => {
                 const parsedData = JSON.parse(getData);
                 parsedData[editedval].note = obj.note;
                 localStorage.setItem("notes", JSON.stringify(parsedData));
-                const freshData = localStorage.getItem("notes");
-                const freshParsedData = JSON.parse(freshData);
-                return freshParsedData;
+                return parsedData;
             });
 
         setobj((prev) => ({
@@ -162,7 +145,6 @@ const ArrayData = () => {
         // ref.current.focus();
     }
 
-
     const closeButtonAddButton = () => {
         setobj((prev) => ({
             ...prev,
@@ -200,25 +182,46 @@ const ArrayData = () => {
         const searchTxt = e.target.value.toLowerCase();
         setSearch(searchTxt);
     }
+    const handleClickCheckDelete = (e)=>{
+        const getData = localStorage.getItem("notes");
+        const parsedData = JSON.parse(getData);
+        const index = parsedData.findIndex(el => el.id === e.id);
+        const copyArray = [...parsedData];
+        copyArray[index].isWantToDelete = !copyArray[index].isWantToDelete;
+        localStorage.setItem("notes", JSON.stringify(copyArray));
+        setArr(copyArray);
+        const isDeleteMarked = copyArray.filter((e)=>{
+        return e.isWantToDelete  === true;
+        })
+        isDeleteMarked.length > 0 ? setIsDeleteChecked(false) : setIsDeleteChecked (true);
+        console.log(isDeleteChecked);
+    }
+
+
+    const deleteAll = ()=>{
+         const getData = localStorage.getItem("notes");
+         const parsedData = JSON.parse(getData);
+         const filteredData = parsedData.filter((e)=>{
+             return e.isWantToDelete === false;
+         })
+         localStorage.setItem ("notes" , JSON.stringify (filteredData));
+         setArr(filteredData);
+         setIsDeleteChecked(true);
+    }
 
     return (
         <>
-
             <div className="container">
-
-                {/* <Button className="d-block mx-auto my-4" variant="primary" onClick={() => setIsShow(true)}>
-         Add Note
-        </Button> */}
-                {/* <Test ref = {ref} onChange = {onChange}/> */}
-
                 <AddButton isModalhidden={isModalhidden} Search={Search} />
                 < ModalAddNote addNote={addNote} AddNotevalue={obj.note} SubmitAddBtn={SubmitAddBtn} ref={ref} isShowAddBtn={isShowAddBtn} addNoteinputVal={addNoteinputVal} closeButtonAddButton={closeButtonAddButton} />
                 <ModalUpdate updateNote={updateNote} updateValue={obj.note} updateSubmitButton={updateSubmitButton} ref={ref} isUpdateShow={isUpdateShow} UpdateinputVal={UpdateinputVal} closeButtonUpdateButton={closeButtonUpdateButton} headingModal={headingModal} />
-                <Card subHeading={subHeading} resultedArray={filteredArray} editNote={editNote} deleteNote={deleteNote} handleClickCheck={handleClickCheck} />
+                <Card subHeading={subHeading} resultedArray={filteredArray} editNote={editNote} deleteNote={deleteNote} handleClickCheck={handleClickCheck} handleClickCheckDelete = {handleClickCheckDelete} />
+                <div className="d-flex justify-content-end my-4 me-4">
+                <button disabled = {isDeleteChecked} className = " mb-4 btn btn-primary" onClick = {deleteAll}>Delete Checked</button>
+                </div>
             </div>
         </>
     );
-
 }
 
 export default ArrayData;
